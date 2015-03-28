@@ -63,6 +63,7 @@ public class DefaultDocumentFormatRegistry extends SimpleDocumentFormatRegistry 
 
 		DocumentFormat docx = new DocumentFormat("Microsoft Word 2007 XML", "docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 		docx.setInputFamily(DocumentFamily.TEXT);
+		docx.setStoreProperties(DocumentFamily.TEXT, Collections.singletonMap("FilterName", "MS Word 2007 XML"));
         addFormat(docx);
 
 		DocumentFormat rtf = new DocumentFormat("Rich Text Format", "rtf", "text/rtf");
@@ -103,6 +104,7 @@ public class DefaultDocumentFormatRegistry extends SimpleDocumentFormatRegistry 
 
 		DocumentFormat xlsx = new DocumentFormat("Microsoft Excel 2007 XML", "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 		xlsx.setInputFamily(DocumentFamily.SPREADSHEET);
+		xlsx.setStoreProperties(DocumentFamily.SPREADSHEET, Collections.singletonMap("FilterName", "Calc MS Excel 2007 XML"));
         addFormat(xlsx);
 
         DocumentFormat csv = new DocumentFormat("Comma Separated Values", "csv", "text/csv");
@@ -139,6 +141,7 @@ public class DefaultDocumentFormatRegistry extends SimpleDocumentFormatRegistry 
 
 		DocumentFormat pptx = new DocumentFormat("Microsoft PowerPoint 2007 XML", "pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
 		pptx.setInputFamily(DocumentFamily.PRESENTATION);
+		pptx.setStoreProperties(DocumentFamily.PRESENTATION, Collections.singletonMap("FilterName", "Impress MS PowerPoint 2007 XML"));
         addFormat(pptx);
         
         DocumentFormat odg = new DocumentFormat("OpenDocument Drawing", "odg", "application/vnd.oasis.opendocument.graphics");
