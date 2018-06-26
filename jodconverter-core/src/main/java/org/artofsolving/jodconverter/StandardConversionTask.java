@@ -22,6 +22,7 @@ import org.artofsolving.jodconverter.document.DocumentFamily;
 import org.artofsolving.jodconverter.document.DocumentFormat;
 
 import com.sun.star.lang.XComponent;
+import org.artofsolving.jodconverter.office.OfficeException;
 
 public class StandardConversionTask extends AbstractConversionTask {
 
@@ -59,6 +60,11 @@ public class StandardConversionTask extends AbstractConversionTask {
     protected Map<String,?> getStoreProperties(File outputFile, XComponent document) {
         DocumentFamily family = OfficeDocumentUtils.getDocumentFamily(document);
         return outputFormat.getStoreProperties(family);
+    }
+
+    @Override
+    protected void modifyDocument(XComponent document) throws OfficeException {
+        // nop
     }
 
 }
