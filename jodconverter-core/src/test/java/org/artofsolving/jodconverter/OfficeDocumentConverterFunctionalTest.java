@@ -52,7 +52,7 @@ public class OfficeDocumentConverterFunctionalTest {
                     File outputFile = File.createTempFile("test", "." + outputFormat.getExtension());
                     outputFile.deleteOnExit();
                     System.out.printf("-- converting %s to %s... ", inputFormat.getExtension(), outputFormat.getExtension());
-                    converter.convert(inputFile, outputFile, outputFormat);
+                    converter.convert(inputFile, outputFile, inputFormat, outputFormat);
                     System.out.printf("done.\n");
                     assertTrue(outputFile.isFile() && outputFile.length() > 0);
                     //TODO use file detection to make sure outputFile is in the expected format

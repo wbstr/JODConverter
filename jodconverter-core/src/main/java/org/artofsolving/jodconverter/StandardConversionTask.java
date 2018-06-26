@@ -12,54 +12,17 @@
 //
 package org.artofsolving.jodconverter;
 
-import static org.artofsolving.jodconverter.office.OfficeUtils.cast;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.artofsolving.jodconverter.document.DocumentFamily;
 import org.artofsolving.jodconverter.document.DocumentFormat;
 
 import com.sun.star.lang.XComponent;
 import org.artofsolving.jodconverter.office.OfficeException;
 
-public class StandardConversionTask extends AbstractConversionTask {
+public class StandardConversionTask extends AbstractOfficeTask {
 
-    private final DocumentFormat outputFormat;
-
-    private Map<String,?> defaultLoadProperties;
-    private DocumentFormat inputFormat;
-
-    public StandardConversionTask(File inputFile, File outputFile, DocumentFormat outputFormat) {
-        super(inputFile, outputFile);
-        this.outputFormat = outputFormat;
-    }
-
-    public void setDefaultLoadProperties(Map<String, ?> defaultLoadProperties) {
-        this.defaultLoadProperties = defaultLoadProperties;
-    }
-
-    public void setInputFormat(DocumentFormat inputFormat) {
-        this.inputFormat = inputFormat;
-    }
-
-    @Override
-    protected Map<String,?> getLoadProperties(File inputFile) {
-        Map<String,Object> loadProperties = new HashMap<String,Object>();
-        if (defaultLoadProperties != null) {
-            loadProperties.putAll(defaultLoadProperties);
-        }
-        if (inputFormat != null && inputFormat.getLoadProperties() != null) {
-            loadProperties.putAll(inputFormat.getLoadProperties());
-        }
-        return loadProperties;
-    }
-
-    @Override
-    protected Map<String,?> getStoreProperties(File outputFile, XComponent document) {
-        DocumentFamily family = OfficeDocumentUtils.getDocumentFamily(document);
-        return outputFormat.getStoreProperties(family);
+    public StandardConversionTask(File inputFile, File outputFile, DocumentFormat inputFormat, DocumentFormat outputFormat) {
+        super(inputFile, outputFile, inputFormat, outputFormat);
     }
 
     @Override

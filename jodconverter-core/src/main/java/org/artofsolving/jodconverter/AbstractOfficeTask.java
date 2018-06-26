@@ -33,20 +33,25 @@ import com.sun.star.task.ErrorCodeIOException;
 import com.sun.star.uno.UnoRuntime;
 import com.sun.star.util.CloseVetoException;
 import com.sun.star.util.XCloseable;
+import java.util.HashMap;
+import org.artofsolving.jodconverter.document.DocumentFamily;
+import org.artofsolving.jodconverter.document.DocumentFormat;
 
-public abstract class AbstractConversionTask implements OfficeTask {
+public abstract class AbstractOfficeTask implements OfficeTask {
 
     private final File inputFile;
     private final File outputFile;
+    private final DocumentFormat inputFormat;
+    private final DocumentFormat outputFormat;
+    private final Map<String, Object> loadProperties = new HashMap<String, Object>();
+    private final Map<String, Object> storeProperties = new HashMap<String, Object>();
 
-    public AbstractConversionTask(File inputFile, File outputFile) {
+    public AbstractOfficeTask(File inputFile, File outputFile, DocumentFormat inputFormat, DocumentFormat outputFormat) {
         this.inputFile = inputFile;
         this.outputFile = outputFile;
+        this.inputFormat = inputFormat;
+        this.outputFormat = outputFormat;
     }
-
-    protected abstract Map<String, ?> getLoadProperties(File inputFile);
-
-    protected abstract Map<String, ?> getStoreProperties(File outputFile, XComponent document);
 
     @Override
     public void execute(OfficeContext context) throws OfficeException {
@@ -76,13 +81,26 @@ public abstract class AbstractConversionTask implements OfficeTask {
         }
     }
 
+    public void addLoadProperty(String key, Object value) {
+        loadProperties.put(key, value);
+    }
+
+    public void addStoreProperty(String key, Object value) {
+        storeProperties.put(key, value);
+    }
+
     private XComponent loadDocument(OfficeContext context, File inputFile) throws OfficeException {
         if (!inputFile.exists()) {
             throw new OfficeException("input document not found");
         }
-        XComponentLoader loader = cast(XComponentLoader.class, context.getService(SERVICE_DESKTOP));
-        Map<String, ?> loadProperties = getLoadProperties(inputFile);
+
+        Map<String, ?> inputFormatProperties = inputFormat.getLoadProperties();
+        if (inputFormatProperties != null) {
+            loadProperties.putAll(inputFormatProperties);
+        }
+
         XComponent document = null;
+        XComponentLoader loader = cast(XComponentLoader.class, context.getService(SERVICE_DESKTOP));
         try {
             document = loader.loadComponentFromURL(toUrl(inputFile), "_blank", 0, toUnoProperties(loadProperties));
         } catch (IllegalArgumentException illegalArgumentException) {
@@ -110,10 +128,12 @@ public abstract class AbstractConversionTask implements OfficeTask {
     protected abstract void modifyDocument(XComponent document) throws OfficeException;
 
     private void storeDocument(XComponent document, File outputFile) throws OfficeException {
-        Map<String, ?> storeProperties = getStoreProperties(outputFile, document);
-        if (storeProperties == null) {
-            throw new OfficeException("unsupported conversion");
+        DocumentFamily family = OfficeDocumentUtils.getDocumentFamily(document);
+        Map<String, ?> outputFormatProperties = outputFormat.getStoreProperties(family);
+        if (outputFormatProperties != null) {
+            storeProperties.putAll(outputFormatProperties);
         }
+
         try {
             cast(XStorable.class, document).storeToURL(toUrl(outputFile), toUnoProperties(storeProperties));
         } catch (ErrorCodeIOException errorCodeIOException) {
