@@ -25,10 +25,13 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.artofsolving.jodconverter.process.ProcessManager;
 import org.artofsolving.jodconverter.process.ProcessQuery;
+import org.artofsolving.jodconverter.process.PureJavaProcessManager;
 import org.artofsolving.jodconverter.util.PlatformUtils;
 
 class OfficeProcess {
 
+    private static final Logger LOGGER = Logger.getLogger(OfficeProcess.class.getName());
+    
     private final File officeHome;
     private final UnoUrl unoUrl;
     private final String[] runAsArgs;
@@ -38,8 +41,6 @@ class OfficeProcess {
 
     private Process process;
     private long pid = PID_UNKNOWN;
-
-    private final Logger logger = Logger.getLogger(getClass().getName());
 
     public OfficeProcess(File officeHome, UnoUrl unoUrl, String[] runAsArgs, File templateProfileDir, File workDir, ProcessManager processManager) {
         this.officeHome = officeHome;
@@ -57,17 +58,27 @@ class OfficeProcess {
     public void start(boolean restart) throws IOException {
         ProcessQuery processQuery = new ProcessQuery("soffice.bin", unoUrl.getAcceptString());
         long existingPid = processManager.findPid(processQuery);
-    	if (!(existingPid == PID_NOT_FOUND || existingPid == PID_UNKNOWN)) {
-			throw new IllegalStateException(String.format("a process with acceptString '%s' is already running; pid %d",
-			        unoUrl.getAcceptString(), existingPid));
+        if (!(existingPid == PID_NOT_FOUND || existingPid == PID_UNKNOWN)) {
+            LOGGER.warning(String.format("a process with acceptString '%s' is already running; pid %d",
+                    unoUrl.getAcceptString(), existingPid));
+            
+            LOGGER.info("trying to kill zombie process...");
+            if (processManager instanceof PureJavaProcessManager) {
+                throw new IllegalStateException("on this platform does not kill process");
+            }
+            
+            processManager.kill(null, existingPid);
+            LOGGER.info("process killed");
         }
-    	if (!restart) {
-    	    prepareInstanceProfileDir();
-    	}
+
+        if (!restart) {
+            prepareInstanceProfileDir();
+        }
+
         List<String> command = new ArrayList<String>();
         File executable = OfficeUtils.getOfficeExecutable(officeHome);
         if (runAsArgs != null) {
-        	command.addAll(Arrays.asList(runAsArgs));
+            command.addAll(Arrays.asList(runAsArgs));
         }
         command.add(executable.getAbsolutePath());
         command.add("-accept=" + unoUrl.getAcceptString() + ";urp;");
@@ -83,14 +94,14 @@ class OfficeProcess {
         if (PlatformUtils.isWindows()) {
             addBasisAndUrePaths(processBuilder);
         }
-        logger.info(String.format("starting process with acceptString '%s' and profileDir '%s'", unoUrl, instanceProfileDir));
+        LOGGER.info(String.format("starting process with acceptString '%s' and profileDir '%s'", unoUrl, instanceProfileDir));
         process = processBuilder.start();
         pid = processManager.findPid(processQuery);
         if (pid == PID_NOT_FOUND) {
             throw new IllegalStateException(String.format("process with acceptString '%s' started but its pid could not be found",
                     unoUrl.getAcceptString()));
         }
-        logger.info("started process" + (pid != PID_UNKNOWN ? "; pid = " + pid : ""));
+        LOGGER.info("started process" + (pid != PID_UNKNOWN ? "; pid = " + pid : ""));
     }
 
     private File getInstanceProfileDir(File workDir, UnoUrl unoUrl) {
@@ -100,7 +111,7 @@ class OfficeProcess {
 
     private void prepareInstanceProfileDir() throws OfficeException {
         if (instanceProfileDir.exists()) {
-            logger.warning(String.format("profile dir '%s' already exists; deleting", instanceProfileDir));
+            LOGGER.warning(String.format("profile dir '%s' already exists; deleting", instanceProfileDir));
             deleteProfileDir();
         }
         if (templateProfileDir != null) {
@@ -119,9 +130,9 @@ class OfficeProcess {
             } catch (IOException ioException) {
                 File oldProfileDir = new File(instanceProfileDir.getParentFile(), instanceProfileDir.getName() + ".old." + System.currentTimeMillis());
                 if (instanceProfileDir.renameTo(oldProfileDir)) {
-                    logger.warning("could not delete profileDir: " + ioException.getMessage() + "; renamed it to " + oldProfileDir);
+                    LOGGER.warning("could not delete profileDir: " + ioException.getMessage() + "; renamed it to " + oldProfileDir);
                 } else {
-                    logger.severe("could not delete profileDir: " + ioException.getMessage());
+                    LOGGER.severe("could not delete profileDir: " + ioException.getMessage());
                 }
             }
         }
@@ -131,7 +142,7 @@ class OfficeProcess {
         // see http://wiki.services.openoffice.org/wiki/ODF_Toolkit/Efforts/Three-Layer_OOo
         File basisLink = new File(officeHome, "basis-link");
         if (!basisLink.isFile()) {
-            logger.fine("no %OFFICE_HOME%/basis-link found; assuming it's OOo 2.x and we don't need to append URE and Basic paths");
+            LOGGER.fine("no %OFFICE_HOME%/basis-link found; assuming it's OOo 2.x and we don't need to append URE and Basic paths");
             return;
         }
         String basisLinkText = FileUtils.readFileToString(basisLink).trim();
@@ -141,7 +152,7 @@ class OfficeProcess {
         String ureLinkText = FileUtils.readFileToString(ureLink).trim();
         File ureHome = new File(basisHome, ureLinkText);
         File ureBin = new File(ureHome, "bin");
-        Map<String,String> environment = processBuilder.environment();
+        Map<String, String> environment = processBuilder.environment();
         // Windows environment variables are case insensitive but Java maps are not :-/
         // so let's make sure we modify the existing key
         String pathKey = "PATH";
@@ -151,7 +162,7 @@ class OfficeProcess {
             }
         }
         String path = environment.get(pathKey) + ";" + ureBin.getAbsolutePath() + ";" + basisProgram.getAbsolutePath();
-        logger.fine(String.format("setting %s to \"%s\"", pathKey, path));
+        LOGGER.fine(String.format("setting %s to \"%s\"", pathKey, path));
         environment.put(pathKey, path);
     }
 
@@ -163,9 +174,9 @@ class OfficeProcess {
     }
 
     private class ExitCodeRetryable extends Retryable {
-        
+
         private int exitCode;
-        
+
         protected void attempt() throws TemporaryException, Exception {
             try {
                 exitCode = process.exitValue();
@@ -173,7 +184,7 @@ class OfficeProcess {
                 throw new TemporaryException(illegalThreadStateException);
             }
         }
-        
+
         public int getExitCode() {
             return exitCode;
         }
@@ -201,7 +212,7 @@ class OfficeProcess {
     }
 
     public int forciblyTerminate(long retryInterval, long retryTimeout) throws IOException, RetryTimeoutException {
-        logger.info(String.format("trying to forcibly terminate process: '" + unoUrl + "'" + (pid != PID_UNKNOWN ? " (pid " + pid  + ")" : "")));
+        LOGGER.info(String.format("trying to forcibly terminate process: '" + unoUrl + "'" + (pid != PID_UNKNOWN ? " (pid " + pid + ")" : "")));
         processManager.kill(process, pid);
         return getExitCode(retryInterval, retryTimeout);
     }
