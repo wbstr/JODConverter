@@ -12,8 +12,12 @@
 //
 package org.artofsolving.jodconverter.office;
 
+import com.sun.star.lang.XMultiServiceFactory;
+
 public interface OfficeContext {
 
     Object getService(String serviceName);
 
+    XMultiServiceFactory getFactory();
+    
 }

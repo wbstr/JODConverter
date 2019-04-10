@@ -29,11 +29,14 @@ import com.sun.star.lang.EventObject;
 import com.sun.star.lang.XComponent;
 import com.sun.star.lang.XEventListener;
 import com.sun.star.lang.XMultiComponentFactory;
+import com.sun.star.lang.XMultiServiceFactory;
 import com.sun.star.uno.XComponentContext;
+import static org.artofsolving.jodconverter.office.OfficeUtils.cast;
 
 class OfficeConnection implements OfficeContext {
 
-    private static AtomicInteger bridgeIndex = new AtomicInteger();
+    private static final Logger LOGGER = Logger.getLogger(OfficeConnection.class.getName());
+    private static final AtomicInteger BRIDGE_INDEX = new AtomicInteger();
 
     private final UnoUrl unoUrl;
 
@@ -45,11 +48,12 @@ class OfficeConnection implements OfficeContext {
 
     private volatile boolean connected = false;
 
-    private XEventListener bridgeListener = new XEventListener() {
+    private final XEventListener bridgeListener = new XEventListener() {
+        @Override
         public void disposing(EventObject event) {
             if (connected) {
                 connected = false;
-                logger.info(String.format("disconnected: '%s'", unoUrl));
+                LOGGER.info(String.format("disconnected: '%s'", unoUrl));
                 OfficeConnectionEvent connectionEvent = new OfficeConnectionEvent(OfficeConnection.this);
                 for (OfficeConnectionEventListener listener : connectionEventListeners) {
                     listener.disconnected(connectionEvent);
@@ -58,8 +62,6 @@ class OfficeConnection implements OfficeContext {
             // else we tried to connect to a server that doesn't speak URP
         }
     };
-
-    private final Logger logger = Logger.getLogger(getClass().getName());
 
     public OfficeConnection(UnoUrl unoUrl) {
         this.unoUrl = unoUrl;
@@ -70,14 +72,14 @@ class OfficeConnection implements OfficeContext {
     }
 
     public void connect() throws ConnectException {
-        logger.fine(String.format("connecting with connectString '%s'", unoUrl));
+        LOGGER.fine(String.format("connecting with connectString '%s'", unoUrl));
         try {
             XComponentContext localContext = Bootstrap.createInitialComponentContext(null);
             XMultiComponentFactory localServiceManager = localContext.getServiceManager();
             XConnector connector = OfficeUtils.cast(XConnector.class, localServiceManager.createInstanceWithContext("com.sun.star.connection.Connector", localContext));
             XConnection connection = connector.connect(unoUrl.getConnectString());
             XBridgeFactory bridgeFactory = OfficeUtils.cast(XBridgeFactory.class, localServiceManager.createInstanceWithContext("com.sun.star.bridge.BridgeFactory", localContext));
-            String bridgeName = "jodconverter_" + bridgeIndex.getAndIncrement();
+            String bridgeName = "jodconverter_" + BRIDGE_INDEX.getAndIncrement();
             XBridge bridge = bridgeFactory.createBridge(bridgeName, "urp", connection, null);
             bridgeComponent = OfficeUtils.cast(XComponent.class, bridge);
             bridgeComponent.addEventListener(bridgeListener);
@@ -85,7 +87,7 @@ class OfficeConnection implements OfficeContext {
             XPropertySet properties = OfficeUtils.cast(XPropertySet.class, serviceManager);
             componentContext = OfficeUtils.cast(XComponentContext.class, properties.getPropertyValue("DefaultContext"));
             connected = true;
-            logger.info(String.format("connected: '%s'", unoUrl));
+            LOGGER.info(String.format("connected: '%s'", unoUrl));
             OfficeConnectionEvent connectionEvent = new OfficeConnectionEvent(this);
             for (OfficeConnectionEventListener listener : connectionEventListeners) {
                 listener.connected(connectionEvent);
@@ -93,7 +95,7 @@ class OfficeConnection implements OfficeContext {
         } catch (NoConnectException connectException) {
             throw new ConnectException(String.format("connection failed: '%s'; %s", unoUrl, connectException.getMessage()));
         } catch (Exception exception) {
-            throw new OfficeException("connection failed: "+ unoUrl, exception);
+            throw new OfficeException("connection failed: " + unoUrl, exception);
         }
     }
 
@@ -102,16 +104,22 @@ class OfficeConnection implements OfficeContext {
     }
 
     public synchronized void disconnect() {
-        logger.fine(String.format("disconnecting: '%s'", unoUrl));
+        LOGGER.fine(String.format("disconnecting: '%s'", unoUrl));
         bridgeComponent.dispose();
     }
 
+    @Override
     public Object getService(String serviceName) {
         try {
             return serviceManager.createInstanceWithContext(serviceName, componentContext);
-        } catch (Exception exception) {
-            throw new OfficeException(String.format("failed to obtain service '%s'", serviceName), exception);
+        } catch (com.sun.star.uno.Exception ex) {
+            throw new OfficeException(String.format("failed to obtain service '%s'", serviceName), ex);
         }
+    }
+
+    @Override
+    public XMultiServiceFactory getFactory() {
+        return cast(XMultiServiceFactory.class, serviceManager);
     }
 
 }

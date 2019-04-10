@@ -58,7 +58,7 @@ public abstract class AbstractOfficeTask implements OfficeTask {
         XComponent document = null;
         try {
             document = loadDocument(context, inputFile);
-            modifyDocument(document);
+            modifyDocument(document, context);
             storeDocument(document, outputFile);
             closeDocument(document);
         } catch (OfficeException officeException) {
@@ -123,9 +123,10 @@ public abstract class AbstractOfficeTask implements OfficeTask {
      * Does nothing by default.
      *
      * @param document
+     * @param context
      * @throws OfficeException
      */
-    protected abstract void modifyDocument(XComponent document) throws OfficeException;
+    protected abstract void modifyDocument(XComponent document, OfficeContext context) throws OfficeException;
 
     private void storeDocument(XComponent document, File outputFile) throws OfficeException {
         DocumentFamily family = OfficeDocumentUtils.getDocumentFamily(document);

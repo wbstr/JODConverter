@@ -17,6 +17,7 @@ import java.io.File;
 import org.artofsolving.jodconverter.document.DocumentFormat;
 
 import com.sun.star.lang.XComponent;
+import org.artofsolving.jodconverter.office.OfficeContext;
 import org.artofsolving.jodconverter.office.OfficeException;
 
 public class StandardConversionTask extends AbstractOfficeTask {
@@ -26,7 +27,7 @@ public class StandardConversionTask extends AbstractOfficeTask {
     }
 
     @Override
-    protected void modifyDocument(XComponent document) throws OfficeException {
+    protected void modifyDocument(XComponent document, OfficeContext context) throws OfficeException {
         // nop
     }
 
