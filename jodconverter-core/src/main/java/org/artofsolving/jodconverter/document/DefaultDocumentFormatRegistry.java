@@ -150,6 +150,12 @@ public class DefaultDocumentFormatRegistry extends SimpleDocumentFormatRegistry 
 //        DocumentFormat svg = new DocumentFormat("Scalable Vector Graphics", "svg", "image/svg+xml");
 //        svg.setStoreProperties(DocumentFamily.DRAWING, Collections.singletonMap("FilterName", "draw_svg_Export"));
 //        addFormat(svg);
-    }
+		DocumentFormat png = new DocumentFormat("Portable Network Graphics", "png", "image/png");
+		png.setStoreProperties(DocumentFamily.TEXT, Collections.singletonMap("FilterName", "writer_png_Export"));
+		png.setStoreProperties(DocumentFamily.SPREADSHEET, Collections.singletonMap("FilterName", "calc_png_Export"));
+		png.setStoreProperties(DocumentFamily.PRESENTATION, Collections.singletonMap("FilterName", "impress_png_Export"));
+		png.setStoreProperties(DocumentFamily.DRAWING, Collections.singletonMap("FilterName", "draw_png_Export"));
+		addFormat(png);
+	}
 
 }
