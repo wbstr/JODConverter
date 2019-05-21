@@ -6,7 +6,7 @@
 
   <groupId>org.artofsolving.jodconverter</groupId>
   <artifactId>jodconverter-core</artifactId>
-  <version>6.2.wcs</version>
+  <version>6.3</version>
   <packaging>jar</packaging>
 
   <name>JODConverter - Core Library</name>

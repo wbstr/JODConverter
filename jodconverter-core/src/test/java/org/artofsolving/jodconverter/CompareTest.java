@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 public class CompareTest {
 
     private final File inputFile = new File("/home/lali/Downloads/a.docx");
-    private final File expectedFile = new File("/home/lali/Downloads/b.docx");
+    private final File compareTo = new File("/home/lali/Downloads/b.docx");
     private final File outputFile = new File("/home/lali/Downloads/out.docx");
     private final DocumentFormatRegistry formatRegistry = new DefaultDocumentFormatRegistry();
     private OfficeManager officeManager;
@@ -52,7 +52,7 @@ public class CompareTest {
         String outputExtension = FilenameUtils.getExtension(outputFile.getName());
         DocumentFormat outputFormat = formatRegistry.getFormatByExtension(outputExtension);
 
-        CompareTask compareTask = new CompareTask(inputFile, expectedFile, outputFile, inputFormat, outputFormat);
+        CompareTask compareTask = new CompareTask(inputFile, compareTo, outputFile, inputFormat, outputFormat);
         officeManager.execute(compareTask);
     }
 

@@ -25,11 +25,11 @@ import static org.artofsolving.jodconverter.office.OfficeUtils.toUrl;
 
 public class CompareTask extends AbstractOfficeTask {
 
-    private final File expectedFile;
+    private final File compareTo;
 
-    public CompareTask(File inputFile, File expectedFile, File outputFile, DocumentFormat inputFormat, DocumentFormat outputFormat) {
+    public CompareTask(File inputFile, File compareTo, File outputFile, DocumentFormat inputFormat, DocumentFormat outputFormat) {
         super(inputFile, outputFile, inputFormat, outputFormat);
-        this.expectedFile = expectedFile;
+        this.compareTo = compareTo;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class CompareTask extends AbstractOfficeTask {
         XDispatchProvider xDispatchProvider = cast(XDispatchProvider.class, xFrame);
 
         Map<String, Object> compareProperties = new HashMap<String, Object>();
-        compareProperties.put("URL", toUrl(expectedFile));
+        compareProperties.put("URL", toUrl(compareTo));
         xDispatchHelper.executeDispatch(xDispatchProvider, ".uno:CompareDocuments", "", 0, toUnoProperties(compareProperties));
     }
 
